@@ -1,0 +1,2 @@
+this is a test of the RAG capabilities in discord max
+this is just a test
