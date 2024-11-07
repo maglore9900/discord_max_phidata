@@ -35,8 +35,6 @@ async def on_message(message):
     # if message.author == client.user:
     #     return
 
-    # Check if the bot is mentioned in the message
-    # if str(client.user) in message.content or str(client.user.id) in message.content or client.user in message.mentions or client.user.id in message.mentions:
     if client.user in message.mentions or any(role in message.role_mentions for role in message.guild.get_member(client.user.id).roles):
         print("heard")
         if len(message.attachments) > 0:
@@ -44,11 +42,8 @@ async def on_message(message):
             for attachment in message.attachments:
                 await attachment.save(fp=f"./tmp/{attachment.filename}")
                 attachments.append(f"{attachment.filename}")
-        # Extract the message (assuming it follows the mention)
         received_message = message.content.replace(f'<@{client.user.id}>', '').strip()
-        # Execute command on the server
         try:
-            # output = f"Here is your command {received_message}"
             output = await ag.invoke_agent(received_message, attachments)
             output = output.content
         except Exception as e:
