@@ -29,7 +29,7 @@ class Adapter:
 
     def add_to_datastore(self, filename):
         try:
-            doc = self.load_document(f"tmp/{filename}")
+            doc = self.load_document(f"{filename}")
             vectorstore_path = Path("vector_store")
             
             # Check if the vector_store directory exists and contains the index files
@@ -46,7 +46,8 @@ class Adapter:
 
             print(f"Successfully added {filename} to the datastore.")
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"An error occured: {e}")
+            return(f"An error occurred: {e}")
             
     def vector_doc(self, filename):
         doc = self.load_document(filename)
@@ -67,11 +68,11 @@ class Adapter:
 
             # Create the QA chain with the loaded retriever
             qa = RetrievalQAWithSourcesChain.from_chain_type(
-                llm=self.llm, chain_type="stuff", retriever=retriever, verbose=False
+                llm=self.llm, chain_type="stuff", retriever=retriever, verbose=True
             )
 
             # Query the retriever using the input query
-            result = qa(query)  # Directly passing the query to the QA chain
+            result = qa.invoke(query)  # Directly passing the query to the QA chain
             result = result['answer']  # Extract the answer from the result dictionary
             return result
 
@@ -95,12 +96,31 @@ class Adapter:
         }
         for extension, loader_cls in loaders.items():
             if filename.endswith(extension):
-                loader = loader_cls(filename)
+                loader = loader_cls("tmp/"+filename)
                 documents = loader.load()
                 break
         else:
-            raise ValueError("Invalid file type")
+            # raise ValueError("Invalid file type")
+            print("Invalid File Type")
+            return "Invalid File Type"
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000, chunk_overlap=30
         )
         return text_splitter.split_documents(documents=documents)
+    
+    def faiss_test(self, filename):
+        import faiss
+        from langchain_community.docstore.in_memory import InMemoryDocstore
+        doc = self.load_document(filename)
+        index = faiss.IndexFlatL2(len(self.embedding.embed_query("hello world")))
+        # index = None
+        vector_store = FAISS(
+            embedding_function=self.embedding,
+            index=index,
+            docstore=InMemoryDocstore(),
+            index_to_docstore_id={},
+        )
+        vector_store.add_documents(doc)
+        results = vector_store.search(query=".", search_type="similarity")
+        print(results)
+        

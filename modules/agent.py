@@ -1,6 +1,9 @@
 from phi.agent import Agent
 from phi.tools.searxng import Searxng
-from modules import adapter, tools, prompts
+from modules import adapter, tools, prompts, active_mem
+
+
+
 
 
 
@@ -10,6 +13,7 @@ class Agents():
         self.ad = adapter.Adapter(env)
         self.model = self.ad.model
         self.filename = None
+        self.active_mem = active_mem.TokenLimitedString(2000)
         self.searxng = Searxng(
             host="http://10.0.0.141:8080",
             engines=[],
@@ -17,6 +21,11 @@ class Agents():
             news=True,
             science=True
         )
+        self.prompt = """
+        <instructions>You are a helpful assistant whose job is to answer the user query</instruction>
+        <query>{query}</query>
+        <chat_history>{chat_history}</chat_history>
+        """
         self.websearch_agent = Agent(
             name="Web Agent",
             role="A web search agent that uses a search engine to find information.",
@@ -53,15 +62,14 @@ class Agents():
         )
         
     async def invoke_agent(self, query, filename=None): 
-        # print(f"filename {filename}")
         if filename:
-            # query = query + " this file: " + filename
             query = query + " these files: " + ", ".join(filename)
-        # print(f"self filename: {filename}")
-        # print(f"query {query}")
-        # print(custom_query)
-        # result = await self.data_store_agent.arun(query)
-        result = await self.agent_team.arun(query)
+
+        # result = await self.agent_team.arun(query)
+        self.active_mem.add_data(query)
+        print(f"current active mem: {self.active_mem.value}")
+        prompt = self.prompt.format(query=query, chat_history=self.active_mem.value)
+        result = await self.agent_team.arun(prompt)
         result = await self.response_agent.arun(result.content)
+        self.active_mem.add_data(result.content)
         return result
-        # print(f"result {result}")

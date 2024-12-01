@@ -8,8 +8,7 @@ environ.Env.read_env()
 TOKEN = env('DISCORD_TOKEN')
 ag = agent.Agents(env)
 
-
-# Initialize the client (your bot)
+# Initialize the client
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
@@ -17,24 +16,58 @@ client = discord.Client(intents=intents)
 # Define a command prefix, for example, '!'
 command_prefix = '!'
 
+
+async def get_username(user_id: int):
+    username = None  # Initialize the variable to store the username
+    
+    # First, try to get the user from the cache
+    user = client.get_user(user_id)
+    
+    if user:
+        username = user.name  # Set the username if found in cache
+        return username
+    
+    # If not in cache, try fetching the user from Discord's servers
+    try:
+        user = await client.fetch_user(user_id)
+        username = user.name  # Set the username if fetched from API
+        return username
+    except discord.NotFound:
+        return None
+    except discord.HTTPException:
+        return None
+
+
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
-    
+
+
 @client.event
 async def on_message(message):
-    attachments = []
-    # print(f"message: {message}")
-    # print(f"message content: {message.content}")
-    # print(f"client user: {client.user}")
-    # print(f"client user id: {client.user.id}")
-    # print(f"User mentions: {message.mentions}")
-    # print(f"Role mentions: {message.role_mentions}")
-    # print(f"attachments {message.attachments}")
-    # Ignore messages from the bot itself
-    # if message.author == client.user:
-    #     return
+    if message.author == client.user:
+        return  # Ignore messages from the bot itself
+    
+    if message.content.startswith(command_prefix):  # Check if the message starts with the command prefix
+        # Remove the prefix from the message content and process the command
+        command = message.content[len(command_prefix):].strip().split(" ")[0].lower()
 
+        if command == 'get_username':
+            try:
+                # Get the user ID from the message (assuming it's the second word after the command)
+                user_id = int(message.content.split(" ")[1])
+                username = await get_username(user_id)
+                if username:
+                    await message.channel.send(f"Username: {username}")
+                else:
+                    await message.channel.send("User not found.")
+            except (IndexError, ValueError):
+                await message.channel.send("Please provide a valid user ID.")
+        else:
+            await message.channel.send(f"Unknown command: {command}")
+    
+    # Additional logic for handling mentions and attachments (as in the original code)
+    attachments = []
     if client.user in message.mentions or any(role in message.role_mentions for role in message.guild.get_member(client.user.id).roles):
         print("heard")
         if len(message.attachments) > 0:
@@ -43,6 +76,8 @@ async def on_message(message):
                 await attachment.save(fp=f"./tmp/{attachment.filename}")
                 attachments.append(f"{attachment.filename}")
         received_message = message.content.replace(f'<@{client.user.id}>', '').strip()
+        username = await get_username(message.author.id)  # Await the username function
+        print(f"username: {username}")
         try:
             output = await ag.invoke_agent(received_message, attachments)
             output = output.content
@@ -50,6 +85,7 @@ async def on_message(message):
             output = f"Error: {e}"
 
         await message.channel.send(f'{output}')
+
 
 async def main():
     try:
@@ -59,6 +95,7 @@ async def main():
     finally:
         await client.close()
         print("Bot has been disconnected.")
+
 
 # Run the asyncio event loop
 if __name__ == "__main__":
