@@ -2,11 +2,6 @@ from phi.agent import Agent
 from phi.tools.searxng import Searxng
 from modules import adapter, tools, prompts, active_mem
 
-
-
-
-
-
 class Agents():
     def __init__(self, env):
         self.env = env
@@ -19,7 +14,11 @@ class Agents():
             engines=[],
             fixed_max_results=5,
             news=True,
-            science=True
+            science=True,
+            images=True,
+            it=True,
+            map=True,
+            videos=True
         )
         self.prompt = """
         <instructions>You are a helpful assistant whose job is to answer the user query</instruction>
