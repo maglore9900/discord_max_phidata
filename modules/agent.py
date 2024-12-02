@@ -26,6 +26,10 @@ class Agents():
         <query>{query}</query>
         <chat_history>{chat_history}</chat_history>
         """
+        self.response = """
+        User: {query}
+        Context: {context}
+        """
         self.websearch_agent = Agent(
             name="Web Agent",
             role="A web search agent that uses a search engine to find information.",
@@ -64,12 +68,11 @@ class Agents():
     async def invoke_agent(self, query, filename=None): 
         if filename:
             query = query + " these files: " + ", ".join(filename)
-
-        # result = await self.agent_team.arun(query)
         self.active_mem.add_data(query)
-        print(f"current active mem: {self.active_mem.value}")
+        print(f"current active mem length: {len(self.active_mem.value)}")
         prompt = self.prompt.format(query=query, chat_history=self.active_mem.value)
         result = await self.agent_team.arun(prompt)
-        result = await self.response_agent.arun(result.content)
+        #! character response
+        result = await self.response_agent.arun(self.response.format(query=query, context=result.content))
         self.active_mem.add_data(result.content)
         return result

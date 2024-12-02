@@ -2,6 +2,7 @@ import discord
 import environ
 from modules import agent
 import asyncio
+from datetime import datetime
 
 env = environ.Env()
 environ.Env.read_env()
@@ -13,9 +14,18 @@ intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 
+
+
+async def get_current_datetime():
+    now = datetime.now()
+    return now.strftime("%m/%d/%Y %H:%M")
+
 # Define a command prefix, for example, '!'
 command_prefix = '!'
 
+prompt = """
+Today: {date}, {username} said: {query}
+"""
 
 async def send_long_message(channel, content):
     """
@@ -44,14 +54,11 @@ async def send_long_message(channel, content):
 
 async def get_username(user_id: int):
     username = None  # Initialize the variable to store the username
-    
     # First, try to get the user from the cache
     user = client.get_user(user_id)
-    
     if user:
         username = user.name  # Set the username if found in cache
         return username
-    
     # If not in cache, try fetching the user from Discord's servers
     try:
         user = await client.fetch_user(user_id)
@@ -107,9 +114,11 @@ async def on_message(message):
                 attachments.append(f"{attachment.filename}")
         received_message = message.content.replace(f'<@{client.user.id}>', '').strip()
         username = await get_username(message.author.id)  # Await the username function
-        print(f"username: {username}")
+        date = await get_current_datetime()
+        custom_query = prompt.format(date=date, username=username, query=received_message)
+        print(custom_query)
         try:
-            output = await ag.invoke_agent(received_message, attachments)
+            output = await ag.invoke_agent(custom_query, attachments)
             output = output.content
         except Exception as e:
             output = f"Error: {e}"
