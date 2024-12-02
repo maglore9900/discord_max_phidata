@@ -72,7 +72,8 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return  # Ignore messages from the bot itself
-    
+    is_in_thread = isinstance(message.channel, discord.Thread)
+
     if message.content.startswith(command_prefix):  # Check if the message starts with the command prefix
         # Remove the prefix from the message content and process the command
         command = message.content[len(command_prefix):].strip().split(" ")[0].lower()
@@ -95,6 +96,10 @@ async def on_message(message):
     attachments = []
     if client.user in message.mentions or any(role in message.role_mentions for role in message.guild.get_member(client.user.id).roles):
         print("heard")
+        if not is_in_thread:
+            thread = await message.create_thread(name="Max's Response")
+        else:
+            thread = message.channel
         if len(message.attachments) > 0:
             print("found attachment")
             for attachment in message.attachments:
@@ -110,7 +115,8 @@ async def on_message(message):
             output = f"Error: {e}"
 
         # await message.channel.send(f'{output}')
-        await send_long_message(message.channel, output)
+        # await send_long_message(message.channel, output)
+        await send_long_message(thread, output)
 
 
 async def main():
