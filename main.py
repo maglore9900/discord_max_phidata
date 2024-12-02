@@ -17,6 +17,31 @@ client = discord.Client(intents=intents)
 command_prefix = '!'
 
 
+async def send_long_message(channel, content):
+    """
+    Sends a long message in intelligently sized chunks, avoiding breaking in the middle of sentences.
+
+    :param channel: The channel where the message should be sent.
+    :param content: The full message string to be split and sent.
+    """
+    while len(content) > 1900:
+        # Find the nearest sentence-ending character within the first 1900 characters
+        chunk = content[:1900]
+        last_sentence_end = max(chunk.rfind('. '), chunk.rfind('! '), chunk.rfind('? '), chunk.rfind('\n'))
+
+        if last_sentence_end == -1:  # If no sentence-ending character is found, break at 1900
+            split_index = 1900
+        else:
+            split_index = last_sentence_end + 1  # Include the sentence-ending character in the chunk
+
+        # Send the chunk and move to the next part
+        await channel.send(content[:split_index].strip())
+        content = content[split_index:].strip()
+
+    # Send the remaining content
+    if content:
+        await channel.send(content.strip())
+
 async def get_username(user_id: int):
     username = None  # Initialize the variable to store the username
     
@@ -84,7 +109,8 @@ async def on_message(message):
         except Exception as e:
             output = f"Error: {e}"
 
-        await message.channel.send(f'{output}')
+        # await message.channel.send(f'{output}')
+        await send_long_message(message.channel, output)
 
 
 async def main():
