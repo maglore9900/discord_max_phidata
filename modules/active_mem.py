@@ -1,7 +1,7 @@
 import tiktoken
 import nltk
 
-nltk.download('punkt')
+# nltk.download('punkt')
 
 class TokenLimitedString:
     def __init__(self, max_tokens=2000, encoding_name="cl100k_base"):
@@ -30,6 +30,8 @@ class TokenLimitedString:
     @property
     def value(self):
         return " ".join(self._sentences)
+    
+    
 
 
 # # Example Usage
