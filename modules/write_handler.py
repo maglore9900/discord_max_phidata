@@ -17,9 +17,9 @@ class AsyncFileWriter:
                 file.write(data + '\n')
                 self.queue.task_done()
 
-    async def writer(self, data):
+    def writer(self, data):
         """Public method to add strings to the queue and ensure the writer is running."""
-        await self.queue.put(data)
+        self.queue.put_nowait(data)  # Non-blocking enqueue
 
         # Start the writer task if it's not already running
         if not self.is_running:
